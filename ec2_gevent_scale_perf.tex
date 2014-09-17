@@ -1,0 +1,270 @@
+\documentclass{beamer}
+
+\mode<presentation> {
+
+% The Beamer class comes with a number of default slide themes
+% which change the colors and layouts of slides. Below this is a list
+% of all the themes, uncomment each in turn to see what they look like.
+
+%\usetheme{default}
+%\usetheme{AnnArbor}
+%\usetheme{Antibes}
+%\usetheme{Bergen}
+%\usetheme{Berkeley}
+%\usetheme{Berlin}
+%\usetheme{Boadilla}
+%\usetheme{CambridgeUS}
+%\usetheme{Copenhagen}
+%\usetheme{Darmstadt}
+%\usetheme{Dresden}
+%\usetheme{Frankfurt}
+%\usetheme{Goettingen}
+%\usetheme{Hannover}
+%\usetheme{Ilmenau}
+%\usetheme{JuanLesPins}
+%\usetheme{Luebeck}
+\usetheme{Madrid}
+%\usetheme{Malmoe}
+%\usetheme{Marburg}
+%\usetheme{Montpellier}
+%\usetheme{PaloAlto}
+%\usetheme{Pittsburgh}
+%\usetheme{Rochester}
+%\usetheme{Singapore}
+%\usetheme{Szeged}
+%\usetheme{Warsaw}
+
+% As well as themes, the Beamer class has a number of color themes
+% for any slide theme. Uncomment each of these in turn to see how it
+% changes the colors of your current slide theme.
+
+%\usecolortheme{albatross}
+%\usecolortheme{beaver}
+%\usecolortheme{beetle}
+%\usecolortheme{crane}
+%\usecolortheme{dolphin}
+%\usecolortheme{dove}
+%\usecolortheme{fly}
+%\usecolortheme{lily}
+%\usecolortheme{orchid}
+%\usecolortheme{rose}
+%\usecolortheme{seagull}
+%\usecolortheme{seahorse}
+%\usecolortheme{whale}
+%\usecolortheme{wolverine}
+
+}
+
+\usepackage{graphicx} % Allows including images
+\usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
+\usepackage{listings}
+\usepackage{hyperref}
+
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\title[DDB with Celery and RabbitMQ]{Performance Tuning and Analysis of Celery  and RabbitMQ} % The short title appears at the bottom of every slide, the full title is only on the title page
+
+\author{Robin} % Your name
+\date{\today} % Date, can be changed to a custom date
+
+\begin{document}
+
+\begin{frame}
+\titlepage % Print the title page as the first slide
+\end{frame}
+
+\begin{frame}
+\frametitle{Agenda} % Table of contents slide, comment this block out to remove it
+\tableofcontents % Throughout your presentation, if you choose to use \section{} and \subsection{} commands, these will automatically be printed on this slide as an overview of your presentation
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+%	PRESENTATION SLIDES
+%----------------------------------------------------------------------------------------
+
+%------------------------------------------------
+\section{Test Environment} % Sections can be created in order to organize your presentation into discrete blocks, all sections and subsections are automatically printed in the table of contents as an overview of the talk
+%------------------------------------------------
+
+%\subsection{Test Environment} % A subsection can be created just before a set of slides with a common theme to further break down your presentation into chunks
+
+\begin{frame}
+\frametitle{DDB Environment}
+\begin{itemize}
+\item EC2
+	\begin{itemize}
+	\item 4 machines
+	\item Each instance has 6TB EBS disk
+	\item c3.4xlarge, 16 vCPU, 30GB Memory
+	\item we test the DDB with 4 Nodes
+	\end{itemize}
+\item Production
+	\begin{itemize}
+	\item 4 machines
+	\item Each instance has 4TB SSD disk
+	\item 32 CPU and 64GB memory
+	\end{itemize}	
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Test Cases}
+\begin{itemize}
+\item We construct 669 identical test cases for AH, PH, ACB, PCB, ATC, PTC and UATC. We triple the test cases (2007)
+	\begin{itemize}
+	\item Randomize: shuffle all the test cases, and equal divide them to n processes. For each process, we shuffle the assigned test cases, and then run 
+	\item n is in (1, 2, 4, 8, 16, 32, 48)
+	\item we run the test in tai
+	\end{itemize}	
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Tested Features}
+\begin{itemize}
+\item AH/PH: app/publisher history (arbitrary data range, 1 country)
+\item ACB/PCB: app/publisher country breakdown (1 month, all countries)
+\item ATC/PTC: app/publisher top chart (1 month, 1 country)
+\item UATC: unified app top chart	(1 month, 1 country)
+\end{itemize}
+\end{frame}
+
+\section{Performance Analyze: Gevent Scalability}
+\begin{frame}
+\frametitle{How we run in parallel?}
+\begin{itemize}
+\item The maximum ASYNC connections pool size will be in 3, 6 and 9. And we want to get the scalability of Gevent.
+\item According to the "Gevent Latency" analyze, we got that the performance penalty is from 0.2s to 0.8s. Therefore, for AH/PH, we still use the 1 SYNC connection.
+\item For PTC/ATC/UATC, as the daily and weekly are always less than 0.3s and we can only split the current query to 3 small queries, if we use 3 ASYNC connections, then the performance is worse than we use 1 SYNC connection. For Monthly, we use 3 ASYNC connections.
+\item For PCB/ACB, we use the maximum ASYNC connections (N), and split  the big one query (UNION 157 SELECTs) to N queries (each query will UNION 157/N SELECTs). 
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+For AH and PH, as we still use SYNC connections, the performance changes a little even we increase the ASYNC connections pool size. That's good.
+\begin{figure}    
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../AH_overall_details.png}
+\label{fig:immediate}
+\end{minipage}
+\hspace{\fill}
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../AH_overall.png}
+\label{fig:proximal}
+\end{minipage}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\begin{figure}    
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../PH_overall_details.png}
+\label{fig:immediate}
+\end{minipage}
+\hspace{\fill}
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../PH_overall.png}
+\label{fig:proximal}
+\end{minipage}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+For ACB/PCB, overall, larger pool size means better performance. Yet,
+\begin{itemize}
+\item The performance improved a lot when we increase the pool size from 3 to 6. But not very obviously if the pool size goes from 6 to 9. 
+\item If the concurrent number goes to 32, then the performance becomes bad. The maximum number of concurrent queries will be 32 * 6 (for each concurrent process, it's running the ACB/PCB). For the current production, it seems the requests for \href{https://rpm.newrelic.com/accounts/318144/key_transactions/7848}{ACB}/\href{https://rpm.newrelic.com/accounts/318144/key_transactions/7252}{PCB} are less than 2RPM. Therefore, I think 6 is a good pool size for us.
+\end{itemize}
+\begin{figure}    
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../ACB_overall_details.png}
+\label{fig:immediate}
+\end{minipage}
+\hspace{\fill}
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../ACB_overall.png}
+\label{fig:proximal}
+\end{minipage}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\begin{figure}    
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../PCB_overall_details.png}
+\label{fig:immediate}
+\end{minipage}
+\hspace{\fill}
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../PCB_overall.png}
+\label{fig:proximal}
+\end{minipage}
+\end{figure}
+\end{frame}
+
+
+\begin{frame}
+For ATC/PTC/UATC, as the granularity for them is feed by feed, we can only start 3 greenlets based on the current implementation. If we want to improve the performance, we need to make the granularity smaller. For example, the granularity can be per feed and month for monthly ATC/PTC/UATC.
+\begin{figure}    
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../ATC_overall_details.png}
+\label{fig:immediate}
+\end{minipage}
+\hspace{\fill}
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../ATC_overall.png}
+\label{fig:proximal}
+\end{minipage}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\begin{figure}    
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../PTC_overall_details.png}
+\label{fig:immediate}
+\end{minipage}
+\hspace{\fill}
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../PTC_overall.png}
+\label{fig:proximal}
+\end{minipage}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\begin{figure}    
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../UATC_overall_details.png}
+\label{fig:immediate}
+\end{minipage}
+\hspace{\fill}
+\begin{minipage}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{../UATC_overall.png}
+\label{fig:proximal}
+\end{minipage}
+\end{figure}
+\end{frame}
+
+\section{Conclusion}
+\begin{frame}
+\frametitle{Conclusion}
+\begin{itemize}
+\item If we use Gevent, then let's set the maximum pool size to 6.
+\item Need to make the granularity of ATC/UATC/PTC smaller. Say per feed and per month.
+\end{itemize}
+\end{frame}
+
+
+%------------------------------------------------
+
+\begin{frame}
+\Huge{\centerline{The End}}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+
+\end{document} 
