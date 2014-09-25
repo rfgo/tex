@@ -1,0 +1,116 @@
+\documentclass[table]{beamer}
+
+% \usepackage{beamerthemesplit} // Activate for custom appearance
+\usepackage{multirow}
+
+\usetheme{Singapore}
+
+\title{Parallelize Backend Computation of Intelligence Web Features}
+\author{}
+\date{\today}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\section[Outline]{}
+\frame[t]{\tableofcontents}
+
+\section{Introduction}
+\subsection{Overview of the Beamer Class}
+\frame
+{
+  \frametitle{Features of the Beamer Class}
+
+  \begin{itemize}
+  \item<1-> Normal LaTeX class.
+  \item<2-> Easy overlays.
+  \item<3-> No external programs needed.      
+  \end{itemize}
+}
+\frame 
+{
+	\frametitle{example of inserting images and columns}
+	\begin{columns}
+	\column{5cm}
+	\includegraphics[width=5.5cm, height=3.6cm]{../b.png}
+	\column{5cm}
+	\includegraphics[width=5.5cm]{../b.png}
+	\end{columns}
+	
+	\begin{columns}
+	\column{5cm}
+	\includegraphics[width=5.5cm]{../b.png}
+	\column{5cm}
+	\includegraphics[width=5.5cm]{../b.png}
+	
+	\end{columns}
+}
+\frame 
+{
+        \begin{columns}[T]
+        \column[T]{4cm}
+        \footnotesize
+        something is very interesting
+        \tiny
+        \begin{itemize}
+        \item Make each program do one thing well. To do a new job, build afresh rather than complicate old programs by adding new features.
+        \item Expect the output of every program to become the input to another, as yet unknown, program. Don't clutter output with extraneous information. Avoid stringently columnar or binary input formats. Don't insist on interactive input.
+        \item Design and build software, even operating systems, to be tried early, ideally within weeks. Don't hesitate to throw away the clumsy parts and rebuild them.
+        \item Use tools in preference to unskilled help to lighten a programming task, even if you have to detour to build the tools and expect to throw some of them out after you've finished using them.
+        \end{itemize}
+        \column[T]{6cm}
+	\includegraphics[width=6cm]{../b.png}
+        \end{columns}
+}
+\frame 
+{
+        \begin{columns}[T]
+        \column[T]{4cm}
+        \footnotesize
+        something is very interesting
+        \tiny
+        \begin{itemize}
+        \item Make each program do one thing well. To do a new job, build afresh rather than complicate old programs by adding new features.
+        \item Expect the output of every program to become the input to another, as yet unknown, program. Don't clutter output with extraneous information. Avoid stringently columnar or binary input formats. Don't insist on interactive input.
+        \item Design and build software, even operating systems, to be tried early, ideally within weeks. Don't hesitate to throw away the clumsy parts and rebuild them.
+        \item Use tools in preference to unskilled help to lighten a programming task, even if you have to detour to build the tools and expect to throw some of them out after you've finished using them.
+        \end{itemize}
+        \column[T]{6cm}
+ 	\tiny
+	\begin{table}
+        \begin{tabular}{l | c | c | c | c }
+        Competitor Name & Swim & Cycle & Run & Total \\
+        \hline \hline
+        John T & 13:04 & 24:15 & 18:34 & 55:53 \\ 
+        Norman P & 8:00 & 22:45 & 23:02 & 53:47\\
+        Alex K & 14:00 & 28:00 & n/a & n/a\\
+        Sarah H & 9:22 & 21:10 & 24:03 & 54:35 
+        \end{tabular}
+        \caption{Triathlon results}
+        \end{table}
+        \end{columns}
+}
+
+\begin{frame}
+\frametitle{You need to pass the [table] option to beamer (which will then pass it to the xcolor package, which it loads).}
+\tiny
+* this example is from http://tex.stackexchange.com/questions/120737/multicolumn-table-in-beamer
+\begin{center}
+\begin{tabular}{cc|c|c|}
+\cline{3-4}
+& & \multicolumn{2}{|c|}{Condition (Gold standard)}\\
+\cline{3-4}
+& & True & False \\
+\hline
+\multicolumn{1}{ |c| }{\multirow{2}{*}{Test outcome}}& 
+  \multicolumn{1}{ |c| }{Positive} & True Positive \cellcolor{green} & 
+  False Positive\cellcolor{red}\\
+\cline{2-4}
+\multicolumn{1}{ |c| }{} & \multicolumn{1}{ |c| }{Negative} & 
+  False Negative\cellcolor{red} & True Negative \cellcolor{green}\\
+\hline
+\end{tabular}
+\end{center}\end{frame}
+
+\end{document}
